@@ -1,0 +1,2 @@
+# Use node directly — npm/npx wrappers require bash, which GitHub Desktop often lacks on Windows.
+node ./node_modules/lint-staged/bin/lint-staged.js

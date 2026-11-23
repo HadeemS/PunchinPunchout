@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4.2.0
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Audit
+        run: npm run audit
+
+      - name: Prisma validate
+        run: npx prisma validate
+        env:
+          DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci?sslmode=require
+          DIRECT_URL: postgresql://ci:ci@127.0.0.1:5432/ci?sslmode=require
+
+      - name: Build
+        run: npx prisma generate && npx next build
+        env:
+          DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci?sslmode=require
+          DIRECT_URL: postgresql://ci:ci@127.0.0.1:5432/ci?sslmode=require
+          SESSION_SECRET: ci-only-dummy-session-secret-min-32-chars
+          ADMIN_USERNAME: admin
+          ADMIN_PASSWORD: ci-dummy-password-not-real
+          ADMIN_FULL_NAME: Administrator
+          NEXT_TELEMETRY_DISABLED: "1"
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
