@@ -1,23 +1,25 @@
 import { z } from "zod";
 
+const postgresUrl = z
+  .string()
+  .min(1)
+  .refine(
+    (v) => v.startsWith("postgresql://") || v.startsWith("postgres://"),
+    "Must be a PostgreSQL connection string"
+  );
+
 const envSchema = z.object({
-  DATABASE_URL: z
-    .string()
-    .min(1, "DATABASE_URL is required")
-    .refine(
-      (v) => v.startsWith("postgresql://") || v.startsWith("postgres://"),
-      "DATABASE_URL must be a PostgreSQL connection string"
-    ),
-  DIRECT_URL: z
-    .string()
-    .min(1, "DIRECT_URL is required")
-    .refine(
-      (v) => v.startsWith("postgresql://") || v.startsWith("postgres://"),
-      "DIRECT_URL must be a PostgreSQL connection string"
-    ),
+  DATABASE_URL: postgresUrl,
+  /** Prisma Migrate / admin ops — Neon direct (non-pooled) URL */
+  DIRECT_URL: postgresUrl,
   SESSION_SECRET: z
     .string()
     .min(32, "SESSION_SECRET must be at least 32 characters"),
+  /** Neon Auth (Managed Better Auth) — provisioned; TimeClock login stays custom JWT */
+  NEON_AUTH_BASE_URL: z.string().url().optional(),
+  NEON_AUTH_JWKS_URL: z.string().url().optional(),
+  NEON_BRANCH: z.string().optional(),
+  NEON_BRANCH_ID: z.string().optional(),
   ADMIN_USERNAME: z.string().min(1).optional(),
   ADMIN_PASSWORD: z.string().optional(),
   ADMIN_FULL_NAME: z.string().optional(),
@@ -33,14 +35,22 @@ let cached: AppEnv | null = null;
 
 /**
  * Validates required environment variables. Never logs secret values.
+ * Maps Neon’s DATABASE_URL_UNPOOLED → DIRECT_URL when DIRECT_URL is unset.
  */
 export function getEnv(): AppEnv {
   if (cached) return cached;
 
+  const directUrl =
+    process.env.DIRECT_URL || process.env.DATABASE_URL_UNPOOLED || "";
+
   const result = envSchema.safeParse({
     DATABASE_URL: process.env.DATABASE_URL,
-    DIRECT_URL: process.env.DIRECT_URL,
+    DIRECT_URL: directUrl,
     SESSION_SECRET: process.env.SESSION_SECRET,
+    NEON_AUTH_BASE_URL: process.env.NEON_AUTH_BASE_URL || undefined,
+    NEON_AUTH_JWKS_URL: process.env.NEON_AUTH_JWKS_URL || undefined,
+    NEON_BRANCH: process.env.NEON_BRANCH || undefined,
+    NEON_BRANCH_ID: process.env.NEON_BRANCH_ID || undefined,
     ADMIN_USERNAME: process.env.ADMIN_USERNAME,
     ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
     ADMIN_FULL_NAME: process.env.ADMIN_FULL_NAME,
@@ -55,6 +65,11 @@ export function getEnv(): AppEnv {
     throw new Error(
       `Invalid environment configuration:\n- ${missing.join("\n- ")}`
     );
+  }
+
+  // Ensure Prisma always sees DIRECT_URL even when only UNPOOLED was set
+  if (!process.env.DIRECT_URL && process.env.DATABASE_URL_UNPOOLED) {
+    process.env.DIRECT_URL = process.env.DATABASE_URL_UNPOOLED;
   }
 
   cached = result.data;

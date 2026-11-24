@@ -142,10 +142,10 @@ export async function getSessionUser(): Promise<AuthUser | null> {
   const session = await verifySessionToken(token);
   if (!session) return null;
 
-  // Admin inactivity: reject if last activity > 8h ago
+  // Admin inactivity: reject if last activity > 8h ago.
+  // Do not mutate cookies here — getSessionUser runs from Server Components.
   if (session.role === Role.ADMIN) {
     if (Date.now() - session.lastActivity > ADMIN_INACTIVITY_MS) {
-      await destroySession();
       return null;
     }
   }
@@ -164,21 +164,11 @@ export async function getSessionUser(): Promise<AuthUser | null> {
   });
 
   if (!user || !user.active) {
-    await destroySession();
     return null;
   }
 
   if (user.sessionVersion !== session.sessionVersion) {
-    await destroySession();
     return null;
-  }
-
-  // Refresh admin lastActivity by re-issuing cookie periodically
-  if (session.role === Role.ADMIN) {
-    const elapsed = Date.now() - session.lastActivity;
-    if (elapsed > 5 * 60 * 1000) {
-      await createSession(user);
-    }
   }
 
   return user;
