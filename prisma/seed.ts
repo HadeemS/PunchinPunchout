@@ -1,5 +1,6 @@
 import { PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { passwordSchema } from "../src/lib/validators";
 
 const prisma = new PrismaClient();
 
@@ -14,9 +15,9 @@ async function main() {
     );
   }
 
-  if (password.length < 12) {
+  if (!passwordSchema.safeParse(password).success) {
     throw new Error(
-      "ADMIN_PASSWORD must be at least 12 characters."
+      "ADMIN_PASSWORD must be at least 8 characters and include a letter and a number."
     );
   }
 

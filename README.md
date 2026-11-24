@@ -36,7 +36,7 @@ Employee punch in / punch out web app. Employees sign in to clock in and out. On
    node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
    ```
 
-   Set `SESSION_SECRET` (32+ chars) and `ADMIN_PASSWORD` (12+ chars) in `.env`.
+   Set `SESSION_SECRET` (32+ chars) and `ADMIN_PASSWORD` (8+ chars, with a letter and a number) in `.env`.
 
 4. **Migrate and seed**
 
@@ -75,8 +75,8 @@ Employee punch in / punch out web app. Employees sign in to clock in and out. On
 4. Migrations live in `netlify/database/migrations/` (Prisma writes new ones there via `prisma.config.ts`). Netlify applies them automatically on every deploy, so the build never runs `prisma migrate deploy`.
 5. In the project's environment variables, add (mark as secret):
    - `SESSION_SECRET` (new value, different from local)
-   - `ADMIN_PASSWORD` (12+ chars), and optionally `ADMIN_USERNAME` / `ADMIN_FULL_NAME`
-6. Deploy. On the first sign-in attempt against an empty database, the app creates the admin account from `ADMIN_USERNAME` / `ADMIN_PASSWORD`, and you're asked to **change the password immediately** after logging in.
+   - `ADMIN_PASSWORD` (8+ chars, with a letter and a number), and optionally `ADMIN_USERNAME` / `ADMIN_FULL_NAME`
+6. Deploy. On the first sign-in attempt against an empty database, the app creates the admin account from `ADMIN_USERNAME` / `ADMIN_PASSWORD`, and you're asked to **change the password immediately** after logging in. Until that change is made, updating `ADMIN_PASSWORD` (and redeploying) also updates the admin's starting password; after it, the env var is ignored.
 7. Netlify provides free HTTPS. Session cookies are `secure` when `NODE_ENV=production`.
 
 ## GitHub security setup
