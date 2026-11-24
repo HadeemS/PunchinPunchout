@@ -1,5 +1,8 @@
 generator client {
   provider = "prisma-client-js"
+  // "native" for local dev and the build machine; "rhel-openssl-3.0.x" is the
+  // runtime Netlify Functions use, so the query engine ships with the function.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
