@@ -58,7 +58,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.29",
     "husky": "^9.1.7",
-    "lint-staged": "^15.5.2",
+    "lint-staged": "^17.6.1",
     "prisma": "^6.19.0",
     "secretlint": "^14.1.0",
     "tailwindcss": "^4",
