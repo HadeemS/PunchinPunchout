@@ -9,9 +9,10 @@ const postgresUrl = z
   );
 
 const envSchema = z.object({
+  /** App runtime connection — DATABASE_URL locally, NETLIFY_DB_URL on Netlify */
   DATABASE_URL: postgresUrl,
-  /** Prisma Migrate / admin ops — Neon direct (non-pooled) URL */
-  DIRECT_URL: postgresUrl,
+  /** Prisma Migrate (local only) — direct (non-pooled) URL. Netlify applies migrations itself. */
+  DIRECT_URL: postgresUrl.optional(),
   SESSION_SECRET: z
     .string()
     .min(32, "SESSION_SECRET must be at least 32 characters"),
@@ -36,15 +37,18 @@ let cached: AppEnv | null = null;
 /**
  * Validates required environment variables. Never logs secret values.
  * Maps Neon’s DATABASE_URL_UNPOOLED → DIRECT_URL when DIRECT_URL is unset.
+ * Falls back to Netlify Database’s NETLIFY_DB_URL when DATABASE_URL is unset.
  */
 export function getEnv(): AppEnv {
   if (cached) return cached;
 
+  const databaseUrl =
+    process.env.DATABASE_URL || process.env.NETLIFY_DB_URL || "";
   const directUrl =
-    process.env.DIRECT_URL || process.env.DATABASE_URL_UNPOOLED || "";
+    process.env.DIRECT_URL || process.env.DATABASE_URL_UNPOOLED || undefined;
 
   const result = envSchema.safeParse({
-    DATABASE_URL: process.env.DATABASE_URL,
+    DATABASE_URL: databaseUrl,
     DIRECT_URL: directUrl,
     SESSION_SECRET: process.env.SESSION_SECRET,
     NEON_AUTH_BASE_URL: process.env.NEON_AUTH_BASE_URL || undefined,

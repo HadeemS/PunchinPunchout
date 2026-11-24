@@ -11,6 +11,7 @@ import {
   verifyPassword,
 } from "@/lib/auth";
 import { loginSchema, changePasswordSchema } from "@/lib/validators";
+import { ensureInitialAdmin } from "@/lib/bootstrap";
 
 const LOCKOUT_WINDOW_MS = 15 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
@@ -34,6 +35,8 @@ export async function loginAction(
 
   const username = parsed.data.username.trim().toLowerCase();
   const password = parsed.data.password;
+
+  await ensureInitialAdmin();
 
   const since = new Date(Date.now() - LOCKOUT_WINDOW_MS);
   const recentFails = await prisma.loginAttempt.count({
