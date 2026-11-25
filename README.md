@@ -70,7 +70,7 @@ Employee punch in / punch out web app. Employees sign in to clock in and out. On
 ## Deploy free on Netlify
 
 1. Push this repo to a **private** GitHub repository.
-2. In Netlify: **Add new site → Import from GitHub** → select the repo. Build settings come from `netlify.toml` (Node 20, `npm run build`).
+2. In Netlify: **Add new site → Import from GitHub** → select the repo. Build settings come from `netlify.toml` (Node 22, `npm run build`).
 3. The app uses **Netlify Database** (managed Postgres). Netlify injects `NETLIFY_DB_URL` automatically, so no connection strings are needed. Production uses the main database and each deploy preview gets its own isolated branch.
 4. Migrations live in `netlify/database/migrations/` (Prisma writes new ones there via `prisma.config.ts`). Netlify applies them automatically on every deploy, so the build never runs `prisma migrate deploy`.
 5. In the project's environment variables, add (mark as secret):
